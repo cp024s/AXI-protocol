@@ -1,39 +1,81 @@
-# AXI Protocol Design
+# README for AXIS Interface Testbench
 
-## Introduction
+## Overview
 
-This README provides an overview of the design of an AMBA AXI4 slave with an operating frequency of 100MHz, operating on a 10ns clock cycle. The design includes support for a maximum of 256 data transfers per burst and is a critical component within the AMBA AXI4 system, consisting of both a master and a slave.
+This repository contains Verilog code for a simple testbench for an AXIS (Advanced eXtensible Interface) interface. The testbench includes modules for both the AXIS master (`axis_m`) and AXIS slave (`axis_s`). The purpose of this testbench is to simulate communication between a master and a slave using the AXIS protocol.
 
-## System Overview
+## Modules
 
-The AMBA AXI4 system comprises a master and a slave, as shown in Fig-1. The communication between the master and slave occurs through five distinct channels: write address channel, write data channel, read data channel, read address channel, and write response channel.
+### `axis_m`
 
-## AXI Protocol Overview
+#### Inputs
 
-In the AXI protocol, all transfers are executed using a handshake mechanism, where data and control information are exchanged between the master and slave. This two-way flow control mechanism allows both the master and slave to control the rate at which data and control information move. Specifically, the source generates the VALID signal to indicate the availability of data or control information, and the destination generates the READY signal to indicate its readiness to accept data or control information. Transfer occurs only when both the VALID and READY signals are set to HIGH. Additionally, it's crucial to ensure there are no combinatorial paths between input and output signals on both master and slave interfaces.
+- `aclk`: Clock input.
+- `areset_n`: Active-low asynchronous reset.
+- `data`: Input data to be sent from the master to the slave.
+- `send`: Control signal to initiate data transmission.
+- `tready`: Indicates the readiness of the slave to accept data.
 
----
+#### Outputs
 
-## Channel Descriptions
+- `tvalid`: Indicates the validity of the transmitted data.
+- `tlast`: Indicates the last data word in a sequence.
+- `tdata`: Transmitted data from the master to the slave.
+- `finish`: Signal indicating the completion of the transaction.
 
-### Address Write (AW) Channel
+### `axis_s`
 
-The AXI master drives write command signals only when the ARESETn signal is HIGH. Otherwise, it drives all signals as zero. The address write command signals driven by the AXI master include AWID, AWADDR, AWBURST, AWLEN, AWSIZE, AWCACHE, AWLOCK, and AWPROT, with AWVALID set to HIGH to indicate the validity of the driven signals. The AXI master only lowers the AWVALID signal after receiving the AWREADY signal, which is driven by the destination slave. This signal indicates that the slave has received the address write command signals, and if AWREADY is LOW, the AXI master retains the same values.
+#### Inputs
 
-### Write Data (W) Channel
+- `areset_n`: Active-low asynchronous reset.
+- `aclk`: Clock input.
+- `ready`: Signal indicating the slave is ready to accept data.
+- `tvalid`: Indicates the validity of the received data.
+- `tlast`: Indicates the last data word in a sequence.
+- `tdata`: Received data from the master.
 
-The AXI master drives Write Data signals after sending the write address command signals. It drives these signals when ARESETn is HIGH; otherwise, it sets all signals to zero. The AXI master sets WDATA with WVALID set to HIGH, holding the same value until it receives the READY signal. When WREADY is HIGH, the AXI master proceeds to drive the next WDATA. The AXI master drives the number of data transfers specified by AWLEN. When driving the last data, it sets WLAST to HIGH.
+#### Outputs
 
-### Write Response (B) Channel
+- `data`: Output data from the slave.
+- `tready`: Signal indicating the readiness of the slave to accept more data.
+- `finish`: Signal indicating the completion of the transaction.
 
-The destination slave drives Write Response signals when ARESETn is HIGH, and sets all signals to zero otherwise. The destination slave waits for the WLAST signal. Upon receiving the WLAST signal, it drives these response signals with BVALID set to HIGH. It maintains this value until it receives the BREADY signal from the AXI master. If BREADY is HIGH, the destination slave resets all signals to zero at the next positive edge of ACLK; otherwise, it retains the same value.
+### Testbenches
 
-### Address Read (AR) Channel
+The repository includes two testbenches:
 
-The AXI master drives command signals when ARESETn is HIGH and sets all signals to zero otherwise. The address read command signals driven by the AXI master include ARID, ARADDR, ARBURST, ARLEN, ARSIZE, ARCACHE, ARLOCK, and ARPROT, with ARVALID set to HIGH to indicate the validity of the driven signals. The AXI master only lowers the ARVALID signal after receiving the ARREADY signal, driven by the source slave. This signal indicates that the source slave has received the address read command signals. If ARREADY is LOW, the AXI master retains the same values.
+1. **`tb_axis_m`**: Testbench for the AXIS master module.
+    - Simulates the behavior of the AXIS master.
+    - Sends data to the slave at specific time intervals.
+    - Generates clock and reset signals.
 
-### Read Data (R) Channel
+2. **`tb_axis_s_m`**: Testbench for the combined simulation of AXIS master and slave modules.
+    - Simulates the behavior of both the AXIS master and slave.
+    - Controls the interaction between the master and slave.
+    - Generates clock and reset signals.
 
-The source slave drives Read Data signals after receiving the read command signals. It drives these signals when ARESETn is HIGH; otherwise, it sets all signals to zero. The source slave sets RDATA with RVALID set to HIGH, holding the same value until it receives the RREADY signal. When RREADY is HIGH, the source slave proceeds to drive the next RDATA. The source slave drives the number of data transfers specified by ARLEN. When driving the last data, it sets RLAST to HIGH.
+## Running the Testbenches
 
----
+1. **Simulation Environment:**
+   - Ensure that you have a Verilog simulator installed (e.g., ModelSim, VCS).
+   - Set up the simulator environment variables.
+
+2. **Compile and Simulate:**
+   - Compile the Verilog files: `axis_m.v`, `axis_s.v`, `tb_axis_m.v`, and `tb_axis_s_m.v`.
+   - Run the simulation with the testbenches.
+
+3. **View Results:**
+   - Analyze simulation waveforms to verify the correctness of the AXIS communication.
+
+## Simulation Steps
+
+1. Initialize the clock and reset signals in the testbench.
+2. Control the `send` and `ready` signals to initiate data transmission.
+3. Observe the `tvalid`, `tlast`, `tdata`, and `finish` signals to track the progress of the communication.
+4. Analyze the waveforms to ensure proper handshake and data transfer between the master and slave.
+
+<hr>
+
+Feel free to modify and use the code for your projects. If you find any issues or have suggestions, please create an issue in the repository.
+
+Happy simulating!
